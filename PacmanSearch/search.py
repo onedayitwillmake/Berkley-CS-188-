@@ -90,6 +90,7 @@ def depthFirstSearch(problem):
     explored = []
     
     def expandSuccessors( aNode ):
+        print "expandSuccessors";
         for successor, action, stepCost in problem.getSuccessors( aNode [0] ) :
             newNode = (successor, action, aNode, stepCost);    
             # Add to stack if we didn't explore already
