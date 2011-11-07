@@ -7,6 +7,8 @@
 # For more info, see http://inst.eecs.berkeley.edu/~cs188/sp09/pacman.html
 import pacman
 import pacmanAgents
+from numpy.ma.core import sqrt
+from random import random
 
 """
 In search.py, you will implement generic search algorithms which are called
@@ -89,20 +91,24 @@ def depthFirstSearch(problem):
     stack = util.Stack();
     explored = []
     
-    def expandSuccessors( aNode ):
-        print "expandSuccessors";
-        for successor, action, stepCost in problem.getSuccessors( aNode [0] ) :
+    def expandSuccessors(aNode):
+        """
+        Recursively adds successors to the top of the stack, and adds them to the explored set
+        If a successor is in the explored set it is ignored.
+        Repeats process until goal is reached or stack is empty
+        """
+        for successor, action, stepCost in problem.getSuccessors(aNode [0]) :
             newNode = (successor, action, aNode, stepCost);    
             # Add to stack if we didn't explore already
             if newNode[0] not in explored:
-                if problem.isGoalState( newNode[0] ):
+                if problem.isGoalState(newNode[0]):
                     return newNode;
-                stack.push( newNode )
+                stack.push(newNode)
                 explored.insert(0, newNode[0])
-                
+                    
         # Stack not empty - keep expandingsuccessors
         if stack.isEmpty() is False:
-            return expandSuccessors( stack.pop() );
+            return expandSuccessors(stack.pop());
         
     
     # Create an initial node, and recursively call expandSuccessors    
@@ -113,9 +119,9 @@ def depthFirstSearch(problem):
     directions = [];
     itr = finalNode;
     while itr:
-        if itr[1] is not None: 
+        if itr[1] is not None: # First state has no direction
             directions.insert(0, itr[1]);
-        itr = itr[2];
+        itr = itr[2]; # Next one
     
     return  directions;
 
@@ -126,12 +132,89 @@ def breadthFirstSearch(problem):
     [2nd Edition: p 73, 3rd Edition: p 82]
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    fifoQueue = util.Queue()
+    explored = [];
+    
+    def expandSuccessors( aNode ):
+        for successor, action, stepCost in problem.getSuccessors( aNode[0] ):
+            newNode = ( successor, action, aNode, stepCost );
+            if problem.isGoalState( newNode[0] ):
+                return newNode;
+                
+            if newNode[0] not in explored:
+                fifoQueue.push(newNode);
+                explored.append(newNode[0]);
+                
+        # Stack is not empty - keep expanding
+        if fifoQueue.isEmpty() is False:
+            return expandSuccessors( fifoQueue.pop() );
+        
+    finalNode = expandSuccessors( (problem.getStartState(), None, None, 0) );
+        
+    directions = [];
+    itr = finalNode;
+    while itr:
+        if itr[1] is not None: # First state has no direction
+            directions.append(itr[1]);
+        itr = itr[2]; # Next one
+    
+    # First node is the goal node, so reverse it so it is the last node
+    directions.reverse(); 
+    return  directions;
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    
+    priorityQueue = util.PriorityQueue()
+    explored = [];
+    
+    def getCumalitiveCost( aNode ):
+        itr = aNode;
+        cost = 0;
+        while itr:
+            cost += itr[3]
+            itr = itr[2]; # Next one
+        return cost;
+        
+    def isInExploredSet( searchNode ):
+        for successor, action, aNode, stepCost in explored:
+            if successor == searchNode[0]:
+                return (successor, action, aNode, stepCost); 
+        return None
+        
+    def expandSuccessors( aNode ):
+        for successor, action, stepCost in problem.getSuccessors( aNode[0] ):
+            parentCost = getCumalitiveCost(aNode)
+            newNode = ( successor, action, aNode, parentCost+stepCost );
+            
+            existingNode = isInExploredSet( newNode );
+            if existingNode is None:
+                priorityQueue.push(newNode, newNode[3] );
+                explored.append( newNode );
+            elif newNode[3] < existingNode[3]:
+                priorityQueue.push( newNode, newNode[3] );
+                
+            if problem.isGoalState( newNode[0] ):
+                return newNode;
+            
+        # Stack is not empty - keep expanding
+        if priorityQueue.isEmpty() is False:
+            return expandSuccessors( priorityQueue.pop() );
+        
+    finalNode = expandSuccessors( (problem.getStartState(), None, None, 0) );
+    
+    # Starting from the final state, add all the actions that got us here
+    directions = [];
+    itr = finalNode;
+    while itr:
+        if itr[1] is not None: # First state has no direction
+            directions.append(itr[1]);
+        itr = itr[2]; # Next one
+    
+    # First node is the goal node, so reverse it so it is the last node
+    directions.reverse();
+    return directions;
 
 def nullHeuristic(state, problem=None):
     """
